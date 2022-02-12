@@ -1,4 +1,5 @@
 import csv
+import math
 
 CSV_TRAIN_FILE_LOCATION = r"titanic.csv"
 
@@ -7,7 +8,34 @@ class TitanicDecisionTree:
     def __init__(self):
         pass
 
+    def calculate_entropy(self,data):
+        # Entropy = summation (p_i)log_2(pi_i)
+
+        temporary_map = {}
+        total = len(data)
+        entropy = 0
+        for value in data:
+            if value not in temporary_map.keys():
+                temporary_map[value] = 1
+            else:
+                temporary_map[value] += 1
+        
+
+        for key in temporary_map.keys():
+            probability_of_value_attribute = temporary_map[key] / total
+            entropy_of_value_attribute =  probability_of_value_attribute * math.log(probability_of_value_attribute,2)
+            entropy += entropy_of_value_attribute
+        
+        return -1 * entropy
+        
+
+
+    def calculate_information_gain(self):
+        pass
+
     def train(self, train_data):
+        parent_entropy = self.calculate_entropy(train_data[0][1:])
+        print(parent_entropy)
         pass
 
     def test(self, test_data):
@@ -41,4 +69,4 @@ if __name__ == '__main__':
     del train_data
     titanic_decision_tree = TitanicDecisionTree()
     titanic_decision_tree.train(parsed_train_data)
-    titanic_decision_tree.test()
+    #titanic_decision_tree.test()
