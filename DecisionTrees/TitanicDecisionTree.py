@@ -2,6 +2,17 @@ import csv
 
 CSV_TRAIN_FILE_LOCATION = r"titanic.csv"
 
+class TitanicDecisionTree:
+
+    def __init__(self):
+        pass
+
+    def train(self, train_data):
+        pass
+
+    def test(self, test_data):
+        pass
+
 def read_csv_data(csv_file):
     titanic_data = []
     with open(csv_file, newline='') as titanic_csv:
@@ -28,3 +39,6 @@ if __name__ == '__main__':
     train_data = read_csv_data(CSV_TRAIN_FILE_LOCATION)
     parsed_train_data = parse_csv_data(train_data)
     del train_data
+    titanic_decision_tree = TitanicDecisionTree()
+    titanic_decision_tree.train(parsed_train_data)
+    titanic_decision_tree.test()
