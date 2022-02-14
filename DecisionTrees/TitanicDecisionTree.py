@@ -3,8 +3,8 @@ import math
 
 CSV_TRAIN_FILE_LOCATION = r"titanic.csv"
 IGNORE_ATTRIBUTE = ["Name"]
-CONTINUOUS_ATTRIBUTES = ["Fare", "Age", "Pclass", "Siblings/Spouses Aboard", "Parents/Children Aboard"]
-CATEGORICAL_ATTRIBUTES = ["Survived", "Sex"]
+CONTINUOUS_ATTRIBUTES = ["Fare", "Age"]
+CATEGORICAL_ATTRIBUTES = ["Survived", "Sex", "Pclass", "Siblings/Spouses Aboard", "Parents/Children Aboard"]
 
 class TitanicDecisionTree:
 
@@ -12,60 +12,132 @@ class TitanicDecisionTree:
         pass
 
     # This is for categorical attribute. Function will differ for continous attributes
-    def calculate_categorical_entropy(self,data):
+    def calculate_categorical_entropy(self, data, result = None):
         # Entropy = summation (p_i)log_2(pi_i)
 
         temporary_map = {}
         total = len(data)
         entropy = 0
-        for value in data:
+
+
+        # Collect all data
+        for index,value in enumerate(data):
             if value not in temporary_map.keys():
-                temporary_map[value] = 1
+                temporary_map[value] = [0,0,0]
+                temporary_map[value][2] += 1
+                if int(result[index]) == 1:
+                    temporary_map[value][0] += 1
+                else:
+                    temporary_map[value][1] += 1
             else:
-                temporary_map[value] += 1
-        
+                temporary_map[value][2] += 1
+                if int(result[index]) == 1:
+                    temporary_map[value][0] += 1
+                else:
+                    temporary_map[value][1] += 1
 
         for key in temporary_map.keys():
-            probability_of_value_attribute = temporary_map[key] / total
-            entropy_of_value_attribute =  probability_of_value_attribute * math.log(probability_of_value_attribute,2)
-            entropy += entropy_of_value_attribute
-            print(probability_of_value_attribute,entropy_of_value_attribute,key)
-        print(-1 * entropy)
-        del temporary_map
-        return -1 * entropy
-        
-    def calculate_continous_entropy(self, data, threshold):
-        pass
+            analysis = temporary_map[key]
+            survive_probability_for_attribute = analysis[0]/analysis[2]
+            death_probability_for_attribute = analysis[1]/analysis[2]
+            entropy_for_attribute = survive_probability_for_attribute * math.log(survive_probability_for_attribute,2) + death_probability_for_attribute * math.log(death_probability_for_attribute,2)
+            entropy_for_attribute = -1 * entropy_for_attribute
+            entropy += entropy_for_attribute * ((analysis[2]) / total)
 
+        del temporary_map
+
+        return entropy
+
+    def calculate_continous_entropy(self, data, result, threshold):
+        greater_than_equal_total = 0
+        greater_than_equal_dead = 0
+        greater_than_equal_survive = 0
+        less_than_total = 0
+        less_than_survive = 0
+        less_than_dead = 0
+        for index,value in enumerate(data):
+            if float(value) >= float(threshold):
+                greater_than_equal_total += 1
+                if int(result[index]) == 1:
+                    greater_than_equal_survive += 1
+                else:
+                    greater_than_equal_dead += 1
+            else:
+                less_than_total += 1
+                if int(result[index]) == 1:
+                    less_than_survive += 1
+                else:
+                    less_than_dead += 1
+        print(greater_than_equal_total,greater_than_equal_survive,greater_than_equal_dead,less_than_total,less_than_dead,less_than_survive)
+        probability_greater_than_equal_survive = greater_than_equal_survive / greater_than_equal_total
+        probability_greater_than_equal_dead = 1 - probability_greater_than_equal_survive
+        probability_less_than_survive = less_than_survive / less_than_total
+        probability_less_than_dead = 1 - probability_less_than_survive
+
+        entropy_greater_than_equal = probability_greater_than_equal_survive * math.log(probability_greater_than_equal_survive,2) + probability_greater_than_equal_dead * math.log(probability_greater_than_equal_dead,2)
+        entropy_greater_than_equal = -1 * entropy_greater_than_equal
+        entropy_less_than = probability_less_than_survive * math.log(probability_less_than_survive,2) + probability_less_than_dead * math.log(probability_less_than_dead,2)
+        entropy_less_than = -1 * entropy_less_than
+
+        entropy = ((greater_than_equal_total / (greater_than_equal_total + less_than_total)) * entropy_greater_than_equal) + ((less_than_total/(greater_than_equal_total + less_than_total)) * entropy_less_than)
+        return entropy
 
     def calculate_information_gain(self):
+
         pass
 
+    def calculate_parent_entropy(self, data):
+        entropy = 0
+        total_survived = 0
+        total_dead = 0
+        for value in data:
+            if int(value) == 1:
+                total_survived += 1
+            else:
+                total_dead += 1
+        probability_dead = total_dead / (total_survived + total_dead)
+        probability_survived = total_survived / (total_survived + total_dead)
+        entropy_dead = probability_dead * math.log(probability_dead,2)
+        entropy_alive = probability_survived * math.log(probability_survived,2)
+        entropy = entropy_dead + entropy_alive
+        print("Parent Entropy: ", entropy * -1)
+        return -1 * entropy
+
     def train(self, train_data):
-        parent_entropy = self.calculate_categorical_entropy(train_data[0][1:])
+        parent_entropy = self.calculate_parent_entropy(train_data[0][1:])
         while parent_entropy != 0:
             information_gain = []
             column_index_start = 1
             for column in range(column_index_start,len(train_data)):
                 if train_data[column][0] in CATEGORICAL_ATTRIBUTES:
                     data = train_data[column][1:]
-                    entropy = self.calculate_categorical_entropy(data)
+                    entropy = self.calculate_categorical_entropy(data, train_data[0][1:])
+                    print(f"Value {train_data[column][0]} IG {parent_entropy - entropy}")
                     information_gain.append(parent_entropy - entropy)
+                elif train_data[column][0] in IGNORE_ATTRIBUTE:
+                    continue
                 else:
                     data = train_data[column][1:]
                     data_visited = []
+                    thresholds = []
                     data_sorted = sorted(data)
                     max_information_gain = 0
                     max_threshold = None
-                    for value in data_sorted:
+
+                    for index in range(len(data_sorted)-1):
+                        if float(data_sorted[index]) != float(data_sorted[index+1]):
+                            avg = (float(data_sorted[index]) + float(data_sorted[index+1]))/2
+                            thresholds.append(avg)                      
+                    for value in thresholds:
                         if value in data_visited:
                             continue
                         else:
-                            entropy = self.calculate_continous_entropy(train_data, value)
+                            entropy = self.calculate_continous_entropy(train_data[column][1:], train_data[0][1:], value)
                             if (parent_entropy - entropy) > max_information_gain:
                                 max_information_gain = (parent_entropy - entropy)
                                 max_threshold = value
                             data_visited.append(value)
+                    print(max_information_gain,max_threshold)
                     information_gain.append(max_information_gain)
             print(information_gain)
             exit()
