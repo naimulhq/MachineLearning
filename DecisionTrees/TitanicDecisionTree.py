@@ -38,9 +38,13 @@ class TitanicDecisionTree:
 
         for key in temporary_map.keys():
             analysis = temporary_map[key]
+            entropy_for_attribute = 0
             survive_probability_for_attribute = analysis[0]/analysis[2]
             death_probability_for_attribute = analysis[1]/analysis[2]
-            entropy_for_attribute = survive_probability_for_attribute * math.log(survive_probability_for_attribute,2) + death_probability_for_attribute * math.log(death_probability_for_attribute,2)
+            if survive_probability_for_attribute != 0:
+                entropy_for_attribute += survive_probability_for_attribute * math.log(survive_probability_for_attribute,2)
+            if death_probability_for_attribute != 0:
+                entropy_for_attribute += death_probability_for_attribute * math.log(death_probability_for_attribute,2) 
             entropy_for_attribute = -1 * entropy_for_attribute
             entropy += entropy_for_attribute * ((analysis[2]) / total)
 
@@ -68,15 +72,25 @@ class TitanicDecisionTree:
                     less_than_survive += 1
                 else:
                     less_than_dead += 1
-        print(greater_than_equal_total,greater_than_equal_survive,greater_than_equal_dead,less_than_total,less_than_dead,less_than_survive)
         probability_greater_than_equal_survive = greater_than_equal_survive / greater_than_equal_total
         probability_greater_than_equal_dead = 1 - probability_greater_than_equal_survive
         probability_less_than_survive = less_than_survive / less_than_total
         probability_less_than_dead = 1 - probability_less_than_survive
 
-        entropy_greater_than_equal = probability_greater_than_equal_survive * math.log(probability_greater_than_equal_survive,2) + probability_greater_than_equal_dead * math.log(probability_greater_than_equal_dead,2)
+        entropy_greater_than_equal = 0
+        entropy_less_than = 0
+
+        if probability_greater_than_equal_survive != 0:
+            entropy_greater_than_equal += probability_greater_than_equal_survive * math.log(probability_greater_than_equal_survive,2)
+        if probability_greater_than_equal_dead != 0:
+            entropy_greater_than_equal += probability_greater_than_equal_dead * math.log(probability_greater_than_equal_dead,2)
+
+        if probability_less_than_survive != 0:
+            entropy_less_than += probability_less_than_survive * math.log(probability_less_than_survive,2)
+        if probability_less_than_dead != 0:
+            entropy_less_than += probability_less_than_dead * math.log(probability_less_than_dead,2)
+        
         entropy_greater_than_equal = -1 * entropy_greater_than_equal
-        entropy_less_than = probability_less_than_survive * math.log(probability_less_than_survive,2) + probability_less_than_dead * math.log(probability_less_than_dead,2)
         entropy_less_than = -1 * entropy_less_than
 
         entropy = ((greater_than_equal_total / (greater_than_equal_total + less_than_total)) * entropy_greater_than_equal) + ((less_than_total/(greater_than_equal_total + less_than_total)) * entropy_less_than)
@@ -137,7 +151,7 @@ class TitanicDecisionTree:
                                 max_information_gain = (parent_entropy - entropy)
                                 max_threshold = value
                             data_visited.append(value)
-                    print(max_information_gain,max_threshold)
+                    print(f"Value: {train_data[column][0]} IG: {max_information_gain} Threshold:{max_threshold}")
                     information_gain.append(max_information_gain)
             print(information_gain)
             exit()
